@@ -7,7 +7,7 @@ A set of proxy DLLs that intercept DirectX 9, 10, 11, and 12 games to provide:
 - **Forced VSync** — Often smoother than in-game or driver VSync
 - **Refresh-rate based divisor** — Virtually perfect display sync
 
-Drop the DLLs next to any game EXE — no install, no overlays, no performance cost.
+Drop the DLLs next to any game EXE (Avoid using with online/anticheat enabled games) — no install, no overlays, no performance cost.
 
 ## Supported APIs
 
