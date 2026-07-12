@@ -1,0 +1,14 @@
+# Build output
+build/
+build_x86/
+build_x64/
+*.7z
+
+# MSVC artifacts
+*.obj
+*.exp
+*.lib
+*.ilk
+*.pdb
+*.user
+.vs/
