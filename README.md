@@ -46,9 +46,6 @@ cmake --build Wrapper-Build/build_x86 --config Release
 cmake -S Wrapper-Build -B Wrapper-Build/build_x64 -A x64
 cmake --build Wrapper-Build/build_x64 --config Release
 ```
-
-Or run `build_d3d9.bat` as administrator.
-
 ## License
 
 MIT — see [LICENSE](LICENSE)
