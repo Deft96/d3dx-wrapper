@@ -183,7 +183,7 @@ static HRESULT STDMETHODCALLTYPE Hook_CreateSwapChainForHwnd(
 
     if (SUCCEEDED(hr) && ppSwapChain && *ppSwapChain) {
         if (refreshHz > 0.0) {
-            FrameLimiter::Get().SetRefreshRate(refreshHz);
+            g_pFL->SetRefreshRate(refreshHz);
         }
 
         HookSwapChainVtable(*ppSwapChain);
