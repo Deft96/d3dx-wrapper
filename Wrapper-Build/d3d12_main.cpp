@@ -40,17 +40,7 @@ static void InitD3D12Pointers() {
     GetSystemDirectoryW(sysPath, MAX_PATH);
     wcscat_s(sysPath, L"\\d3d12.dll");
 
-    wchar_t tempPath[MAX_PATH];
-    GetTempPathW(MAX_PATH, tempPath);
-    wcscat_s(tempPath, L"d3d12_r.dll");
-
-    if (!CopyFileW(sysPath, tempPath, FALSE)) {
-        g_hRealD3D12 = LoadLibraryW(sysPath);
-    } else {
-        g_hRealD3D12 = LoadLibraryW(tempPath);
-        DeleteFileW(tempPath);
-    }
-
+    g_hRealD3D12 = LoadLibraryW(sysPath);
     if (!g_hRealD3D12) return;
 
     pCreateDevice = (PFN_D3D12CreateDevice_t)

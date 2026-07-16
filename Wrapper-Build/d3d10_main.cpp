@@ -61,17 +61,7 @@ static void InitD3D10Pointers() {
     GetSystemDirectoryW(sysPath, MAX_PATH);
     wcscat_s(sysPath, L"\\d3d10.dll");
 
-    wchar_t tempPath[MAX_PATH];
-    GetTempPathW(MAX_PATH, tempPath);
-    wcscat_s(tempPath, L"d3d10_r.dll");
-
-    if (!CopyFileW(sysPath, tempPath, FALSE)) {
-        g_hRealD3D10 = LoadLibraryW(sysPath);
-    } else {
-        g_hRealD3D10 = LoadLibraryW(tempPath);
-        DeleteFileW(tempPath);
-    }
-
+    g_hRealD3D10 = LoadLibraryW(sysPath);
     if (!g_hRealD3D10) return;
 
     pCreateDevice = (PFN_D3D10CreateDevice_t)

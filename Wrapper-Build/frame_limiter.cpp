@@ -19,7 +19,6 @@ FrameLimiter::FrameLimiter()
     , m_targetFrameNum(0)
     , m_firstFrame(true)
     , m_frameCount(0)
-    , m_delaySeconds(0.0)
     , m_actualFPS(0.0)
     , m_fpsAccum(0.0) {
     InitializeCriticalSection(&m_cs);
@@ -28,7 +27,6 @@ FrameLimiter::FrameLimiter()
     QueryPerformanceCounter(&m_masterClock);
     m_lastPresentTime = m_masterClock;
     m_fpsLastSample = m_masterClock;
-    m_initTime = m_masterClock;
 
     timeBeginPeriod(1);
     LoadConfig();
@@ -40,7 +38,6 @@ void FrameLimiter::LoadConfig() {
     char* lastSlash = strrchr(iniPath, '\\');
     if (lastSlash) *(lastSlash + 1) = '\0';
 
-    // Try multiple config file names in priority order
     char fullPath[MAX_PATH];
     const char* configNames[] = { "d3dx_config.ini" };
     const char* foundConfig = nullptr;
@@ -55,7 +52,6 @@ void FrameLimiter::LoadConfig() {
     }
 
     if (!foundConfig) {
-        // config not found, will use defaults
         strcpy_s(fullPath, iniPath);
         strcat_s(fullPath, "d3dx_config.ini");
     } else {
@@ -77,13 +73,6 @@ void FrameLimiter::LoadConfig() {
     if (GetPrivateProfileStringA("FrameLimit", "ForceVSync", "0", buf, sizeof(buf), fullPath) > 0)
         forceVSync = atoi(buf);
     m_forceVSync = (forceVSync != 0);
-
-    // ---- DelaySeconds ----
-    double delay = 0.0;
-    if (GetPrivateProfileStringA("FrameLimit", "DelaySeconds", "0", buf, sizeof(buf), fullPath) > 0)
-        delay = atof(buf);
-    if (delay < 0.0) delay = 0.0;
-    m_delaySeconds = delay;
 
     // ---- RefreshRate ----
     double refresh = 0.0;
@@ -108,8 +97,6 @@ void FrameLimiter::LoadConfig() {
 
     RecalculateFPS();
 
-    // if Divisor is 0 and TargetFPS is set, use TargetFPS directly
-    // (RefreshRate doesn't affect direct TargetFPS mode)
     if (m_divisor <= 0.0 && fps > 0.0) {
         SetTargetFPS(fps);
     }
@@ -156,8 +143,6 @@ void FrameLimiter::WaitUntil(LONGLONG targetTicks) {
 }
 
 HRESULT FrameLimiter::WaitForFrame() {
-    if (!ShouldHook()) return S_OK;
-
     if (m_frameInterval <= 0.0) {
         EnterCriticalSection(&m_cs);
         m_firstFrame = false;
@@ -234,12 +219,4 @@ void FrameLimiter::OnFramePresented() {
 
 double FrameLimiter::GetActualFPS() const {
     return m_actualFPS;
-}
-
-bool FrameLimiter::ShouldHook() const {
-    if (m_delaySeconds <= 0.0) return true;
-    LARGE_INTEGER now;
-    QueryPerformanceCounter(&now);
-    double elapsed = static_cast<double>(now.QuadPart - m_initTime.QuadPart) / m_qpcFreq.QuadPart;
-    return elapsed >= m_delaySeconds;
 }

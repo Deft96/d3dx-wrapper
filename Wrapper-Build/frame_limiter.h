@@ -23,7 +23,6 @@ public:
     double GetRefreshRate() const { return m_refreshRate; }
     double GetDivisor() const { return m_divisor; }
     bool GetForceVSync() const { return m_forceVSync; }
-    bool ShouldHook() const;
 
     HRESULT WaitForFrame();
     void OnFramePresented();
@@ -54,8 +53,6 @@ private:
 
     LARGE_INTEGER m_lastPresentTime;
     LARGE_INTEGER m_masterClock;
-    LARGE_INTEGER m_initTime;
-    double m_delaySeconds;
     LONGLONG m_targetFrameNum;
 
     bool m_firstFrame;

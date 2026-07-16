@@ -137,7 +137,6 @@ static HRESULT STDMETHODCALLTYPE Hook_Reset(
     HRESULT hr = g_OrigReset(pDevice, pPresentationParameters);
 
     if (SUCCEEDED(hr)) {
-        // re-patch Present after reset only if not already hooked
         void** vtable = *reinterpret_cast<void***>(pDevice);
         if (vtable && reinterpret_cast<void*>(vtable[17]) != reinterpret_cast<void*>(Hook_Present)) {
             PatchVtableEntry(vtable, 17, reinterpret_cast<void*>(Hook_Present),
@@ -294,7 +293,7 @@ IDirect3D9* WINAPI Direct3DCreate9(UINT SDKVersion) {
     InitD3D9Pointers();
     if (!pDirect3DCreate9) return nullptr;
     IDirect3D9* pD3D9 = pDirect3DCreate9(SDKVersion);
-    if (pD3D9 && g_pFL->ShouldHook()) {
+    if (pD3D9) {
         HookD3D9Vtable(pD3D9);
     }
     return pD3D9;
@@ -304,7 +303,7 @@ HRESULT WINAPI Direct3DCreate9Ex(UINT SDKVersion, IDirect3D9Ex** ppD3D9Ex) {
     InitD3D9Pointers();
     if (!pDirect3DCreate9Ex) return E_FAIL;
     HRESULT hr = pDirect3DCreate9Ex(SDKVersion, ppD3D9Ex);
-    if (SUCCEEDED(hr) && ppD3D9Ex && *ppD3D9Ex && g_pFL->ShouldHook()) {
+    if (SUCCEEDED(hr) && ppD3D9Ex && *ppD3D9Ex) {
         HookD3D9Vtable(static_cast<IDirect3D9*>(*ppD3D9Ex));
     }
     return hr;
