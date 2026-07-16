@@ -29,6 +29,7 @@ public:
 
     double GetActualFPS() const;
     unsigned long long GetFrameCount() const { return m_frameCount; }
+    unsigned long long GetSkipFrames() const { return m_skipFrames; }
 
 private:
     FrameLimiter();
@@ -56,6 +57,7 @@ private:
     LONGLONG m_targetFrameNum;
 
     bool m_firstFrame;
+    unsigned long long m_skipFrames;
     unsigned long long m_frameCount;
     double m_actualFPS;
     double m_fpsAccum;

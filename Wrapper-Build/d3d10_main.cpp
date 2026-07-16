@@ -107,9 +107,9 @@ static void D3D10Log(const char* fmt, ...) {
         wchar_t* lastSlash = wcsrchr(iniPath, L'\\');
         if (lastSlash) *(lastSlash + 1) = L'\0';
 
-        const wchar_t* configNames[] = { L"d3d9_config.ini", L"d3dx_config.ini", L"d3d10_config.ini", L"d3d11_config.ini", L"d3d12_config.ini" };
+        const wchar_t* configNames[] = { L"d3dx_config.ini" };
         wchar_t fullPath[MAX_PATH];
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 1; i++) {
             wcscpy_s(fullPath, iniPath);
             wcscat_s(fullPath, configNames[i]);
             if (GetFileAttributesW(fullPath) != INVALID_FILE_ATTRIBUTES) {

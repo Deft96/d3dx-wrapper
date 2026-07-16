@@ -18,6 +18,7 @@ FrameLimiter::FrameLimiter()
     , m_forceVSync(false)
     , m_targetFrameNum(0)
     , m_firstFrame(true)
+    , m_skipFrames(0)
     , m_frameCount(0)
     , m_actualFPS(0.0)
     , m_fpsAccum(0.0) {
@@ -40,10 +41,10 @@ void FrameLimiter::LoadConfig() {
 
     // Try multiple config file names in priority order
     char fullPath[MAX_PATH];
-    const char* configNames[] = { "d3d9_config.ini", "d3dx_config.ini", "d3d10_config.ini", "d3d11_config.ini", "d3d12_config.ini" };
+    const char* configNames[] = { "d3dx_config.ini" };
     const char* foundConfig = nullptr;
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 1; i++) {
         strcpy_s(fullPath, iniPath);
         strcat_s(fullPath, configNames[i]);
         if (GetFileAttributesA(fullPath) != INVALID_FILE_ATTRIBUTES) {
@@ -53,9 +54,9 @@ void FrameLimiter::LoadConfig() {
     }
 
     if (!foundConfig) {
-        // neither found, default to d3d12_config.ini (will use defaults)
+        // config not found, will use defaults
         strcpy_s(fullPath, iniPath);
-        strcat_s(fullPath, "d3d12_config.ini");
+        strcat_s(fullPath, "d3dx_config.ini");
     } else {
         strcpy_s(fullPath, iniPath);
         strcat_s(fullPath, foundConfig);
@@ -75,6 +76,13 @@ void FrameLimiter::LoadConfig() {
     if (GetPrivateProfileStringA("FrameLimit", "ForceVSync", "0", buf, sizeof(buf), fullPath) > 0)
         forceVSync = atoi(buf);
     m_forceVSync = (forceVSync != 0);
+
+    // ---- SkipFrames ----
+    int skip = 0;
+    if (GetPrivateProfileStringA("FrameLimit", "SkipFrames", "0", buf, sizeof(buf), fullPath) > 0)
+        skip = atoi(buf);
+    if (skip < 0) skip = 0;
+    m_skipFrames = static_cast<unsigned long long>(skip);
 
     // ---- RefreshRate ----
     double refresh = 0.0;
@@ -163,6 +171,20 @@ HRESULT FrameLimiter::WaitForFrame() {
         m_lastPresentTime = now;
         m_targetFrameNum = 0;
         m_firstFrame = false;
+        if (m_skipFrames > 0) {
+            m_skipFrames--; // skip first frame too
+        }
+        LeaveCriticalSection(&m_cs);
+        return S_OK;
+    }
+
+    // skip remaining warmup frames for overlay compatibility
+    if (m_skipFrames > 0) {
+        EnterCriticalSection(&m_cs);
+        m_skipFrames--;
+        m_masterClock = now;
+        m_lastPresentTime = now;
+        m_targetFrameNum = 0;
         LeaveCriticalSection(&m_cs);
         return S_OK;
     }

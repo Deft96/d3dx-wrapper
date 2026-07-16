@@ -20,10 +20,9 @@ static void LogInit() {
     char* lastSlash = strrchr(iniPath, '\\');
     if (lastSlash) *(lastSlash + 1) = '\0';
 
-    const char* configNames[] = { "d3d9_config.ini", "d3dx_config.ini",
-                                   "d3d10_config.ini", "d3d11_config.ini", "d3d12_config.ini" };
+    const char* configNames[] = { "d3dx_config.ini" };
     char fullPath[MAX_PATH];
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 1; i++) {
         strcpy_s(fullPath, iniPath);
         strcat_s(fullPath, configNames[i]);
         if (GetFileAttributesA(fullPath) != INVALID_FILE_ATTRIBUTES) {
