@@ -34,6 +34,7 @@ Edit `d3dx_config.ini` before use:
 - `ForceVSync` — `0` = Off, `1` = Forced ON
 - `TargetFPS` — Direct FPS cap (e.g. `60`, `141.0`)
 - `Divisor` — Auto-calculate FPS as RefreshRate / Divisor
+- `DelaySeconds` — Delays hooks by N seconds for overlay/anti-cheat compatibility
 - `DebugLog` — `1` to write logs to `%TEMP%`
 
 ## Building
