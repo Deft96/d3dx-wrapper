@@ -235,8 +235,19 @@ static void InitDXGIPointers() {
     GetSystemDirectoryW(sysPath, MAX_PATH);
     wcscat_s(sysPath, L"\\dxgi.dll");
 
-    Log("Loading real dxgi from: %ls\n", sysPath);
-    g_hRealDXGI = LoadLibraryW(sysPath);
+    wchar_t tempPath[MAX_PATH];
+    GetTempPathW(MAX_PATH, tempPath);
+    wcscat_s(tempPath, L"dxgi_r.dll");
+
+    if (!CopyFileW(sysPath, tempPath, FALSE)) {
+        Log("ERROR: CopyFile failed, err=%u\n", GetLastError());
+        g_hRealDXGI = LoadLibraryW(sysPath);
+    } else {
+        Log("Loaded real dxgi via temp: %ls\n", tempPath);
+        g_hRealDXGI = LoadLibraryW(tempPath);
+        DeleteFileW(tempPath);
+    }
+
     if (!g_hRealDXGI) {
         Log("ERROR: LoadLibrary failed, err=%u\n", GetLastError());
         return;
@@ -280,7 +291,7 @@ HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory) {
         IDXGIFactory2* pF2 = nullptr;
         if (SUCCEEDED(reinterpret_cast<IUnknown*>(*ppFactory)->QueryInterface(
                 IID_IDXGIFactory2, reinterpret_cast<void**>(&pF2)))) {
-            HookFactoryVtable(pF2);
+            if (g_pFL->ShouldHook()) HookFactoryVtable(pF2);
             pF2->Release();
         }
     }
@@ -295,7 +306,7 @@ HRESULT WINAPI CreateDXGIFactory2(UINT Flags, REFIID riid, void** ppFactory) {
         IDXGIFactory2* pF2 = nullptr;
         if (SUCCEEDED(reinterpret_cast<IUnknown*>(*ppFactory)->QueryInterface(
                 IID_IDXGIFactory2, reinterpret_cast<void**>(&pF2)))) {
-            HookFactoryVtable(pF2);
+            if (g_pFL->ShouldHook()) HookFactoryVtable(pF2);
             pF2->Release();
         }
     }

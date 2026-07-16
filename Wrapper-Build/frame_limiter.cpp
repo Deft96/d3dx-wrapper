@@ -18,8 +18,8 @@ FrameLimiter::FrameLimiter()
     , m_forceVSync(false)
     , m_targetFrameNum(0)
     , m_firstFrame(true)
-    , m_skipFrames(0)
     , m_frameCount(0)
+    , m_delaySeconds(0.0)
     , m_actualFPS(0.0)
     , m_fpsAccum(0.0) {
     InitializeCriticalSection(&m_cs);
@@ -28,6 +28,7 @@ FrameLimiter::FrameLimiter()
     QueryPerformanceCounter(&m_masterClock);
     m_lastPresentTime = m_masterClock;
     m_fpsLastSample = m_masterClock;
+    m_initTime = m_masterClock;
 
     timeBeginPeriod(1);
     LoadConfig();
@@ -77,12 +78,12 @@ void FrameLimiter::LoadConfig() {
         forceVSync = atoi(buf);
     m_forceVSync = (forceVSync != 0);
 
-    // ---- SkipFrames ----
-    int skip = 0;
-    if (GetPrivateProfileStringA("FrameLimit", "SkipFrames", "0", buf, sizeof(buf), fullPath) > 0)
-        skip = atoi(buf);
-    if (skip < 0) skip = 0;
-    m_skipFrames = static_cast<unsigned long long>(skip);
+    // ---- DelaySeconds ----
+    double delay = 0.0;
+    if (GetPrivateProfileStringA("FrameLimit", "DelaySeconds", "0", buf, sizeof(buf), fullPath) > 0)
+        delay = atof(buf);
+    if (delay < 0.0) delay = 0.0;
+    m_delaySeconds = delay;
 
     // ---- RefreshRate ----
     double refresh = 0.0;
@@ -155,6 +156,8 @@ void FrameLimiter::WaitUntil(LONGLONG targetTicks) {
 }
 
 HRESULT FrameLimiter::WaitForFrame() {
+    if (!ShouldHook()) return S_OK;
+
     if (m_frameInterval <= 0.0) {
         EnterCriticalSection(&m_cs);
         m_firstFrame = false;
@@ -171,20 +174,6 @@ HRESULT FrameLimiter::WaitForFrame() {
         m_lastPresentTime = now;
         m_targetFrameNum = 0;
         m_firstFrame = false;
-        if (m_skipFrames > 0) {
-            m_skipFrames--; // skip first frame too
-        }
-        LeaveCriticalSection(&m_cs);
-        return S_OK;
-    }
-
-    // skip remaining warmup frames for overlay compatibility
-    if (m_skipFrames > 0) {
-        EnterCriticalSection(&m_cs);
-        m_skipFrames--;
-        m_masterClock = now;
-        m_lastPresentTime = now;
-        m_targetFrameNum = 0;
         LeaveCriticalSection(&m_cs);
         return S_OK;
     }
@@ -245,4 +234,12 @@ void FrameLimiter::OnFramePresented() {
 
 double FrameLimiter::GetActualFPS() const {
     return m_actualFPS;
+}
+
+bool FrameLimiter::ShouldHook() const {
+    if (m_delaySeconds <= 0.0) return true;
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    double elapsed = static_cast<double>(now.QuadPart - m_initTime.QuadPart) / m_qpcFreq.QuadPart;
+    return elapsed >= m_delaySeconds;
 }
