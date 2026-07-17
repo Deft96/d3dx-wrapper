@@ -19,6 +19,7 @@ FrameLimiter::FrameLimiter()
     , m_targetFrameNum(0)
     , m_firstFrame(true)
     , m_frameCount(0)
+    , m_warmupSeconds(5.0)
     , m_actualFPS(0.0)
     , m_fpsAccum(0.0) {
     InitializeCriticalSection(&m_cs);
@@ -27,6 +28,7 @@ FrameLimiter::FrameLimiter()
     QueryPerformanceCounter(&m_masterClock);
     m_lastPresentTime = m_masterClock;
     m_fpsLastSample = m_masterClock;
+    m_initTime = m_masterClock;
 
     timeBeginPeriod(1);
     LoadConfig();
@@ -143,6 +145,14 @@ void FrameLimiter::WaitUntil(LONGLONG targetTicks) {
 }
 
 HRESULT FrameLimiter::WaitForFrame() {
+    // warmup: let other hooks (RTSS, overlays) initialize before pacing
+    if (m_warmupSeconds > 0.0) {
+        LARGE_INTEGER now;
+        QueryPerformanceCounter(&now);
+        double elapsed = static_cast<double>(now.QuadPart - m_initTime.QuadPart) / m_qpcFreq.QuadPart;
+        if (elapsed < m_warmupSeconds) return S_OK;
+    }
+
     if (m_frameInterval <= 0.0) {
         EnterCriticalSection(&m_cs);
         m_firstFrame = false;

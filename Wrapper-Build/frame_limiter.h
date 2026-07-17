@@ -53,6 +53,8 @@ private:
 
     LARGE_INTEGER m_lastPresentTime;
     LARGE_INTEGER m_masterClock;
+    LARGE_INTEGER m_initTime;
+    double m_warmupSeconds;
     LONGLONG m_targetFrameNum;
 
     bool m_firstFrame;
