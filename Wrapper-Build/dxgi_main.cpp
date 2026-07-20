@@ -177,6 +177,10 @@ static HRESULT STDMETHODCALLTYPE Hook_CreateSwapChainForHwnd(
             (double)pFullscreenDesc->RefreshRate.Denominator;
     }
 
+    if (pDesc && g_pFL->GetForceVSync()) {
+        const_cast<DXGI_SWAP_CHAIN_DESC1*>(pDesc)->Flags &= ~DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    }
+
     HRESULT hr = g_OrigCreateSwapChainForHwnd(
         pFactory, pDevice, hWnd, pDesc,
         pFullscreenDesc, pRestrictToOutput, ppSwapChain);
@@ -196,6 +200,10 @@ static HRESULT STDMETHODCALLTYPE Hook_CreateSwapChainForHwnd(
 static HRESULT STDMETHODCALLTYPE Hook_CreateSwapChain(
     IDXGIFactory* pFactory, IUnknown* pDevice,
     DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain) {
+
+    if (pDesc && g_pFL->GetForceVSync()) {
+        pDesc->Flags &= ~DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    }
 
     HRESULT hr = g_OrigCreateSwapChain(pFactory, pDevice, pDesc, ppSwapChain);
 
@@ -269,7 +277,16 @@ extern "C" {
 HRESULT WINAPI CreateDXGIFactory(REFIID riid, void** ppFactory) {
     InitDXGIPointers();
     if (!pCreateDXGIFactory) return E_FAIL;
-    return pCreateDXGIFactory(riid, ppFactory);
+    HRESULT hr = pCreateDXGIFactory(riid, ppFactory);
+    if (SUCCEEDED(hr) && ppFactory && *ppFactory) {
+        IDXGIFactory2* pF2 = nullptr;
+        if (SUCCEEDED(reinterpret_cast<IUnknown*>(*ppFactory)->QueryInterface(
+                IID_IDXGIFactory2, reinterpret_cast<void**>(&pF2)))) {
+            HookFactoryVtable(pF2);
+            pF2->Release();
+        }
+    }
+    return hr;
 }
 
 HRESULT WINAPI CreateDXGIFactory1(REFIID riid, void** ppFactory) {
